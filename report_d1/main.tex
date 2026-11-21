@@ -21,7 +21,7 @@ Code and data: \url{https://github.com/abdullahsajidfr/competing-platforms-crowd
 \maketitle
 
 \begin{abstract}
-Mobile crowdsensing apps pay smartphone users to collect data such as air quality or traffic, and several apps often compete for the same users. Recent learning-based mechanisms let an app learn rivals' prices from reports by users who reject it, assuming these reports are truthful. We study what happens when that assumption fails, and how learning apps price and cover a city. We model each hour as a leader--follower game: apps post budget-limited bounties on 500\,m cells, and users choose at most one task and share a cell's bounty with co-workers. We prove that the users' game is an exact potential game, so a pure Nash equilibrium exists and best-response play reaches it, and that truthful reporting is not incentive compatible under rival-offer learning. We also compute Nash and joint-profit benchmarks for the apps' pricing game. A Mesa simulation replays one real week of Beijing T-Drive taxi and GeoLife pedestrian traces for 300 users. Initial results show that users reach an equilibrium every hour, within 2\% of a greedy planner's welfare on average. When half the users inflate reports, all users earn more and app profit falls 7--12\%. Q-learning apps settle below Nash pay without demonstrable collusion, and a 50\% bonus raises low-traffic coverage 18-fold at equal budget. Ablations show that price and budget dominate outcomes. The final deliverable is an open-source simulator, a report reviewing at least fifteen papers, and a demo testing a faithful PACMAB implementation, adaptive liars and report-screening defences.
+Mobile crowdsensing apps pay smartphone users to collect data such as air quality or traffic, and several apps often compete for the same users. Recent learning-based mechanisms let an app learn rivals' prices from reports by users who reject it, assuming these reports are truthful. We study what happens when that assumption fails, and how learning apps price and cover a city. We model each hour as a leader--follower game: apps post budget-limited bounties on 500\,m cells, and users choose at most one task and share a cell's bounty with co-workers. We prove that the users' game is an exact potential game, so a pure Nash equilibrium exists and best-response play reaches it, and that truthful reporting is not incentive compatible under rival-offer learning. We also compute Nash and joint-profit benchmarks for the apps' pricing game. A Mesa simulation replays one real week of Beijing T-Drive taxi and GeoLife pedestrian traces for 300 users. Results show that users reach an equilibrium every hour, within 2\% of a greedy planner's welfare on average. When half the users inflate reports, all users earn more and app profit falls 7--12\%. Q-learning apps settle below Nash pay without demonstrable collusion, and a 50\% bonus raises low-traffic coverage 18-fold at equal budget. Ablations show that price and budget dominate outcomes. The deliverable so far is an open-source simulator with its code, data and results; the next step is to test a faithful PACMAB implementation, liars who adapt, and defences against false reports.
 \end{abstract}
 
 % ======================================================================
@@ -46,159 +46,66 @@ Our research questions follow directly:
 \item \textbf{RQ4:} Which pricing method gives the best coverage per unit budget?
 \end{itemize}
 
-The rest of this section reviews the papers our model builds on. For each one we state:
-\begin{itemize}
-\item the problem it addresses;
-\item why it is relevant to our setup;
-\item what we take from it;
-\item its key findings.
-\end{itemize}
-The final report will extend this review to at least fifteen papers.
+The papers below are the ones the model is built on. For each we give the problem it addresses, its relevance to our setup, what we took from it, and its key findings.
 
 \subsection{Incentive mechanisms for a single platform}
-\textbf{Yang et al., ``Crowdsourcing to smartphones'' (MobiCom 2012)~\cite{yang2012crowdsourcing}.}
-\begin{itemize}
-\item \emph{Problem.} How should one platform pay users so that enough of them sense? Two models are studied:
-  \begin{itemize}
-  \item \emph{Platform-centric:} the platform announces a total reward $R$, and each user chooses a sensing time $t_i$. User $i$ receives $R\,t_i/\sum_k t_k$ and pays $t_i\kappa_i$.
-  \item \emph{User-centric:} a reverse auction, MSensing.
-  \end{itemize}
-\item \emph{Relevance.} This is the template for our game. The platform is a Stackelberg leader, users are followers, and the reward is shared in proportion to contribution. Our equal split of a cell's bounty among its sensors is the discrete counterpart of their proportional split. We even keep their notation $\kappa_i$ for a user's private cost.
-\item \emph{Insight.} The leader's problem is solved by backward induction. First compute the users' equilibrium for each reward; then optimise the reward against that response. Our platform price matrix (Section~\ref{sec:setup}) does exactly this numerically.
-\item \emph{Key findings.}
-  \begin{itemize}
-  \item The platform-centric game has a unique Stackelberg equilibrium, computable efficiently.
-  \item MSensing is computationally efficient, individually rational, profitable and truthful.
-  \end{itemize}
-  These single-platform guarantees are exactly what competition and learning remove in our setting.
-\end{itemize}
+\textbf{Yang et al.~\cite{yang2012crowdsourcing}.}
+\emph{Problem:} how one platform should pay smartphone users to sense. In the platform-centric model the platform announces a total reward $R$, each user chooses a sensing time $t_i$, and user $i$ receives $R\,t_i/\sum_k t_k$ at cost $t_i\kappa_i$. In the user-centric model, users bid in a reverse auction (MSensing).
+\emph{Relevance:} this is the template for our game. The platform is a Stackelberg leader and users are followers who share a reward. Our equal split of a cell's bounty is the discrete counterpart of their proportional split, and we keep their notation $\kappa_i$ for a user's private cost.
+\emph{Insight:} the leader's problem is solved by backward induction. First compute the users' equilibrium for each reward, then optimise the reward against it. Our platform price matrix does this numerically.
+\emph{Key findings:} the platform-centric game has a unique Stackelberg equilibrium that can be computed efficiently. MSensing is computationally efficient, individually rational, profitable and truthful.
 
 \subsection{Multiple competing platforms}
-\textbf{Li et al., ``MP-Coopetition'' (IEEE TSC 2021)~\cite{li2021mp}.}
-\begin{itemize}
-\item \emph{Problem.} Incentive design when several MCS platforms either compete or cooperate.
-  \begin{itemize}
-  \item \emph{Competition:} platforms price their rewards to attract participants, and users choose which platform to work for. This is modelled as a two-stage Stackelberg game.
-  \item \emph{Cooperation:} platforms share sensing data through many-to-many bargaining.
-  \end{itemize}
-\item \emph{Relevance.} It is the closest prior model to ours: multiple leaders (platforms) and a population of followers (users) choosing a platform.
-\item \emph{Insight.} The right equilibrium notion is Nash competition among leaders, with users best-responding underneath. We add three things it lacks:
-  \begin{itemize}
-  \item platforms that \emph{learn} prices instead of solving for them;
-  \item users who may \emph{misreport};
-  \item real spatial mobility, so that coverage becomes an outcome.
-  \end{itemize}
-\item \emph{Key findings.}
-  \begin{itemize}
-  \item Competing platforms secure their payoff by optimally pricing rewards, and users pick the best platform.
-  \item Exact bargaining is NP-hard, so a heuristic is proposed; cooperation further raises platform payoffs.
-  \end{itemize}
-\end{itemize}
+\textbf{Li et al., MP-Coopetition~\cite{li2021mp}.}
+\emph{Problem:} incentive design when several platforms compete or cooperate. Competing platforms price rewards to attract participants and users choose which platform to work for; this is modelled as a two-stage Stackelberg game. Cooperating platforms share data through many-to-many bargaining.
+\emph{Relevance:} it is the closest prior model to ours: several leaders and a population of followers who choose a platform.
+\emph{Insight:} the equilibrium notion is Nash competition among the leaders, with users best-responding underneath. Our model differs in three ways: platforms learn their prices, users may misreport, and users move on real routes, so coverage is an outcome.
+\emph{Key findings:} competing platforms secure their payoff by pricing rewards optimally, and users pick the best platform. Exact bargaining is NP-hard, so a heuristic is proposed; cooperation further raises platform payoffs.
 
-\textbf{Dongare et al., ``Dynamic hypergame for task assignment in multi-platform MCS'' (PACMAB, 2026)~\cite{dongare2026pacmab}.}
-\begin{itemize}
-\item \emph{Problem.} Task assignment when multiple MCS platforms simultaneously send personalised task offers to users, under incomplete information:
-  \begin{itemize}
-  \item platforms do not know rivals' preferences or users' qualities;
-  \item users do not know task efforts in advance.
-  \end{itemize}
-  The interaction is a two-sided matching game with contracts. It is posed as a dynamic \emph{hypergame}, in which each platform holds \emph{perceptions} of its rivals' preferences and refines them over repeated play.
-\item \emph{Relevance.} PACMAB is the mechanism our RQ1 attacks, and the source of two modelling choices:
-  \begin{itemize}
-  \item each user performs at most one task per time step;
-  \item rejected platforms receive feedback (which rival task was accepted, and at what payment).
-  \end{itemize}
-  PACMAB assumes users reveal this feedback truthfully. Its perception update keeps the maximum reported rival payment.
-\item \emph{Insight.} Rival prices are learned from users' reports, which are cheap talk. A single inflated report can permanently raise a max-based perception. Our ``rival-offer learning'' is a simplified, per-cell version of this rule; we also test the max-based variant.
-\item \emph{Key findings.}
-  \begin{itemize}
-  \item Platforms run combinatorial UCB bandits over payment levels, and users run bandits over task efforts.
-  \item The scheme is fully decentralised and reaches a hyper Nash equilibrium given perceptions.
-  \item It completes at least 41\% more tasks than benchmarks, and 99.8\% task completion without complete information.
-  \end{itemize}
-\end{itemize}
+\textbf{Dongare et al., PACMAB~\cite{dongare2026pacmab}.}
+\emph{Problem:} task assignment when several platforms send personalised task offers to the same users. Platforms do not know rivals' preferences or users' qualities, and users do not know task efforts. The interaction is a matching game with contracts, posed as a dynamic hypergame in which each platform holds perceptions of its rivals and refines them over time.
+\emph{Relevance:} PACMAB is the mechanism our RQ1 examines, and the source of two modelling choices. Each user performs at most one task per time step, and a user who rejects a platform tells it which rival task was accepted and at what payment. PACMAB assumes this feedback is truthful, and its perception update keeps the maximum reported rival payment.
+\emph{Insight:} rival prices are learned from users' reports, which cost nothing to falsify. Under a max-based update, a single inflated report raises the estimate permanently. Our rival-offer learning is a simplified per-cell version of this rule, and we also test the max update.
+\emph{Key findings:} platforms run combinatorial UCB bandits over payment levels and users run bandits over task efforts. The scheme is fully decentralised and reaches a hyper Nash equilibrium given the perceptions. It completes at least 41\% more tasks than the benchmarks, with 99.8\% task completion.
 
-\subsection{Game-theoretic foundations: congestion and potential games}
-\textbf{Rosenthal, ``A class of games possessing pure-strategy Nash equilibria'' (1973)~\cite{rosenthal1973}.}
-\begin{itemize}
-\item \emph{Problem.} Which games are guaranteed a pure Nash equilibrium?
-\item \emph{Key finding.} In a \emph{congestion game}, each player picks a set of resources and a resource's payoff depends only on how many players use it. Every such game has a pure NE, found by maximising the function $\sum_e\sum_{\ell=1}^{n_e}r_e(\ell)$.
-\item \emph{Relevance and insight.} Our user game fits this structure: each (platform, cell) pair is a resource whose per-user payoff $R_{jg}/n_{jg}$ falls with its load. Rosenthal's construction gives our potential function directly (Proposition~\ref{prop:potential}).
-\end{itemize}
+\subsection{Congestion and potential games}
+\textbf{Rosenthal~\cite{rosenthal1973}.}
+\emph{Problem:} which games always have a pure Nash equilibrium.
+\emph{Key finding:} in a congestion game, players choose resources and a resource's payoff depends only on how many use it. Every such game has a pure NE, a maximiser of $\sum_e\sum_{\ell=1}^{n_e}r_e(\ell)$.
+\emph{Relevance and insight:} each (platform, cell) pair in our model is a resource whose per-user payoff $R_{jg}/n_{jg}$ falls with its load. Rosenthal's function gives our potential directly (Proposition~\ref{prop:potential}).
 
-\textbf{Monderer and Shapley, ``Potential games'' (1996)~\cite{monderer1996potential}.}
-\begin{itemize}
-\item \emph{Problem.} Characterise games in which every unilateral change in a player's payoff equals the change in one global function.
-\item \emph{Key findings.}
-  \begin{itemize}
-  \item Every finite (exact) potential game has the \emph{finite improvement property}: every sequence of strict unilateral improvements is finite and ends at a pure NE.
-  \item Congestion games are potential games, and conversely every finite potential game is isomorphic to a congestion game.
-  \end{itemize}
-\item \emph{Relevance and insight.} The finite improvement property is why asynchronous best response in our simulator must stop at an equilibrium every hour. We use it as a numerical check: the potential never decreases along the dynamics.
-\end{itemize}
+\textbf{Monderer and Shapley~\cite{monderer1996potential}.}
+\emph{Problem:} games in which every unilateral change in a player's payoff equals the change in one global function.
+\emph{Key findings:} every finite potential game has the finite improvement property: any sequence of strict unilateral improvements ends at a pure NE. Congestion games are potential games, and every finite potential game is isomorphic to a congestion game.
+\emph{Relevance and insight:} this is why best response in our simulator stops at an equilibrium every hour. We check it numerically by confirming that the potential never decreases.
 
-\textbf{Blume (1993)~\cite{blume1993} and Marden and Shamma (2012)~\cite{marden2012revisiting}: log-linear learning.}
-\begin{itemize}
-\item \emph{Problem.} Which equilibrium do boundedly rational players select?
-\item \emph{Key findings.}
-  \begin{itemize}
-  \item Blume introduced log-linear (logit) revision: a revising player picks action $x$ with probability $\propto e^{u(x)/T}$. In potential games, the stationary distribution is proportional to $e^{\Phi/T}$, so as $T\to0$ play concentrates on potential maximisers.
-  \item Marden and Shamma show this stochastic stability survives relaxed assumptions: asynchronous or simultaneous revisions, restricted action sets, and payoff-based implementations.
-  \end{itemize}
-\item \emph{Relevance and insight.} Our user game has many equilibria (Section~\ref{sec:eq}). Log-linear learning gives a principled selection rule, and we verify that lower temperatures reach higher-potential equilibria.
-\end{itemize}
+\textbf{Blume~\cite{blume1993}; Marden and Shamma~\cite{marden2012revisiting}.}
+\emph{Problem:} which equilibrium boundedly rational players select.
+\emph{Key findings:} under log-linear learning, a revising player picks action $x$ with probability proportional to $e^{u(x)/T}$. In potential games the stationary distribution is proportional to $e^{\Phi/T}$, so as $T\to0$ play concentrates on potential maximisers. Marden and Shamma show this survives asynchronous or simultaneous revision, restricted action sets and payoff-based implementations.
+\emph{Relevance and insight:} our user game has many equilibria, and log-linear learning gives a principled way to select among them. In our pilot, lower temperatures reached higher-potential equilibria.
 
-\textbf{Vetta, ``Nash equilibria in competitive societies'' (FOCS 2002)~\cite{vetta2002}.}
-\begin{itemize}
-\item \emph{Problem.} Bound the efficiency loss of selfish behaviour in \emph{valid utility games}. In these games the social objective is submodular, and each player receives at least its marginal contribution.
-\item \emph{Key finding.} Every NE achieves at least half the optimal welfare, i.e.\ price of anarchy $\le2$. Applications include facility location and sensor placement.
-\item \emph{Relevance and insight.} Our platforms' value of a cell, $q(n)=1-(1-\rho)^n$, is submodular, exactly as in sensor placement. However, our users are paid an \emph{equal share}, not their marginal contribution, so the bound does not apply automatically. This motivates measuring efficiency numerically: by brute force on small games, and against a greedy planner on real data.
-\end{itemize}
+\textbf{Vetta~\cite{vetta2002}.}
+\emph{Problem:} how much welfare selfish play loses in valid utility games, where the social objective is submodular and each player receives at least its marginal contribution.
+\emph{Key finding:} every NE achieves at least half the optimal welfare (price of anarchy at most 2), with applications including facility location.
+\emph{Relevance and insight:} our platforms' cell value $q(n)=1-(1-\rho)^n$ is submodular, as in sensor placement. But our users receive equal shares, not their marginal contribution, so the bound is not guaranteed. We therefore measure efficiency numerically.
 
-\subsection{Learning, pricing and tacit collusion}
-\textbf{Watkins and Dayan, ``Q-learning'' (1992)~\cite{watkins1992}.}
-\begin{itemize}
-\item \emph{Problem.} Learning optimal control of an unknown Markov decision process from experience.
-\item \emph{Key finding.} The update $Q(s,a)\leftarrow(1-\alpha)Q(s,a)+\alpha[r+\gamma\max_{a'}Q(s',a')]$ converges to the optimal action values with probability~1, provided the environment is stationary, every state--action pair is visited infinitely often, and step sizes decay suitably.
-\item \emph{Relevance and insight.} Our platforms use this update over discrete price levels. With several learning platforms, each one's environment is non-stationary, so the convergence guarantee is lost. We therefore check convergence and equilibrium properties empirically.
-\end{itemize}
+\subsection{Learning and algorithmic pricing}
+\textbf{Watkins and Dayan~\cite{watkins1992}.}
+\emph{Problem:} learning optimal decisions in an unknown Markov decision process from experience.
+\emph{Key finding:} the update $Q(s,a)\leftarrow(1-\alpha)Q(s,a)+\alpha[r+\gamma\max_{a'}Q(s',a')]$ converges to the optimal values with probability 1 if the environment is stationary, every state--action pair is visited infinitely often, and step sizes decay suitably.
+\emph{Relevance and insight:} our platforms use this update over price levels. With several learners each one's environment is non-stationary, so the guarantee does not hold, and we check convergence empirically.
 
-\textbf{Calvano et al., ``Artificial intelligence, algorithmic pricing, and collusion'' (AER 2020)~\cite{calvano2020ai}.}
-\begin{itemize}
-\item \emph{Problem.} Do independent Q-learning sellers in a repeated Bertrand oligopoly (logit demand) learn to collude without communicating?
-\item \emph{Relevance.} RQ2 asks the same question of platforms that buy data. Here ``collusion'' means pay held \emph{below} the competitive level.
-\item \emph{Insight.} We copy their experimental recipe:
-  \begin{itemize}
-  \item a price grid around the Nash and monopoly prices;
-  \item one-period memory as the state;
-  \item exponentially decaying exploration and a stability-based convergence criterion;
-  \item the profit-gain index $\Delta=(\bar\Pi-\Pi^N)/(\Pi^C-\Pi^N)$;
-  \item control experiments that remove the ability to punish (memoryless agents) or to value the future (myopic agents).
-  \end{itemize}
-\item \emph{Key findings.}
-  \begin{itemize}
-  \item The algorithms consistently learn supracompetitive prices, typically with $\Delta$ around 70--90\%.
-  \item These prices are sustained by punishing deviations, followed by a gradual return to the high prices.
-  \item Collusion weakens with more firms but remains substantial.
-  \end{itemize}
-  A key caveat, which we take seriously, is that high (here: low) prices alone do not prove collusion.
-\end{itemize}
+\textbf{Calvano et al.~\cite{calvano2020ai}.}
+\emph{Problem:} whether independent Q-learning sellers in a repeated Bertrand oligopoly learn to collude without communicating.
+\emph{Relevance:} RQ2 asks the same question of platforms that buy data. For buyers, collusion means pay held below the competitive level.
+\emph{Insight:} we follow their experimental design: a price grid around the Nash and joint-profit prices, one-period memory as the state, decaying exploration, a stability-based convergence rule, the profit-gain index $\Delta=(\bar\Pi-\Pi^N)/(\Pi^C-\Pi^N)$, and control runs that remove the ability to punish or to value the future.
+\emph{Key findings:} the algorithms learn supracompetitive prices, typically with $\Delta$ of 70--90\%. These prices are sustained by punishing deviations, followed by a gradual return to high prices, and collusion weakens with more firms. High (here, low) prices alone do not prove collusion.
 
 \subsection{Data and simulation tools}
-\begin{itemize}
-\item \emph{CrowdSenSim}~\cite{fiandrino2017crowdsensim} is a simulator for MCS in realistic urban environments: city maps, realistic user mobility, and data collection and energy evaluation. It shows that MCS outcomes depend strongly on realistic spatial mobility, which is why we replay real traces rather than random walks.
-\item \emph{T-Drive}~\cite{yuan2010tdrive} provides one week of GPS traces from 10,357 Beijing taxis. \emph{GeoLife}~\cite{zheng2010geolife} provides 2007--2012 trajectories of 182 users, mostly in Beijing. Together they give us drivers and pedestrians.
-\item \emph{Mesa}~\cite{kazil2020mesa} is a Python agent-based modelling framework; our agents and model are built on it.
-\end{itemize}
+CrowdSenSim~\cite{fiandrino2017crowdsensim} simulates crowdsensing in realistic urban environments and shows the importance of realistic mobility, which is why we replay real traces. T-Drive~\cite{yuan2010tdrive} gives one week of GPS traces from 10,357 Beijing taxis. GeoLife~\cite{zheng2010geolife} gives 2007--2012 trajectories of 182 users, mostly in Beijing. Mesa~\cite{kazil2020mesa} is the Python agent-based modelling framework the simulator is built on.
 
-\subsection{Gap and our approach}
-Existing multi-platform MCS work either solves for equilibrium prices with fully rational platforms~\cite{li2021mp}, or learns them under truthful user feedback~\cite{dongare2026pacmab}. We combine three elements that, to our knowledge, have not been studied together:
-\begin{enumerate}
-\item learning platforms whose price estimates come from user reports that may be false;
-\item a formal potential-game analysis of the users' side;
-\item a simulation on real city-scale mobility.
-\end{enumerate}
-This lets us ask who gains from misreporting, whether learned pay is competitive, and where coverage fails.
+\subsection{Our approach}
+Li et al.~\cite{li2021mp} solve for equilibrium prices with fully rational platforms. PACMAB~\cite{dongare2026pacmab} learns prices under truthful user feedback. We combine learning platforms whose price estimates come from possibly false user reports, a potential-game analysis of the users' side, and a simulation on real city-scale mobility. This lets us measure who gains from misreporting, whether learned pay is competitive, and where coverage fails.
 
 % ======================================================================
 \section{Problem Setup: Game-Theoretic Formulation}\label{sec:model}
@@ -354,7 +261,7 @@ The higher bounty is shared by everyone who later senses $g$. So a lie is a priv
 \begin{itemize}
 \item \emph{Data processing.} T-Drive fixes are interpolated every 100\,m, and GPS jumps above 120\,km/h are removed. GeoLife hours count as walking if the median speed is at most 6\,km/h; they are overlaid on the T-Drive week by weekday and hour.
 \item \emph{Implementation.} Mesa agents (\texttt{UserAgent}, \texttt{PlatformAgent}) are coordinated by \texttt{CrowdsensingModel}. Each setting runs for 10 seeds; seeds change costs and types, not routes. Truthful and lying runs share routes, costs and seeds, and strategic users are nested (the 25\% set is a subset of the 50\% set), so we compare the same people.
-\item \emph{Parameters.} Table~\ref{tab:params}; the full list with justifications is in the repository.
+\item \emph{Parameters.} Table~\ref{tab:params}.
 \end{itemize}
 
 \begin{table}[!htbp]\centering
@@ -524,19 +431,19 @@ Static Nash / joint-profit & 0.82 / 0.70 & 451.5 / 491.5 & -- / 0.67 & -- / 505.
 \textbf{Insights.}
 \begin{enumerate}
 \item The users' side is a well-behaved potential game. Equilibria are reached in a few sweeps and are near-efficient on real data. The interesting strategic behaviour is therefore on the platforms' side and in the reports.
-\item With binding budgets, the price level trades participation against the number of posted tasks. Neither more pay nor more budget reaches low-traffic cells: only targeted, cell-specific premia do.
+\item With binding budgets, the price level trades participation against the number of posted tasks. Raising pay or budget barely changes low-traffic coverage, while a targeted bonus raises it substantially.
 \item Truthful feedback is not an equilibrium of report-based learning. Its main effect is a transfer from platforms to \emph{all} users, honest ones included.
 \item Learned pay falls below the competitive level, but our controls attribute this to learning dynamics rather than to enforced collusion.
 \end{enumerate}
 
-\textbf{Next steps (final submission).}
+\textbf{Next steps.}
 \begin{enumerate}
 \item Implement PACMAB faithfully (UCB with perceptions, personalised offers) for RQ1.
 \item Let users learn $\delta$ with a bandit, to see whether lying spreads or dies out.
-\item Design and test report defences (trimming, capping, spot checks) that restore truthfulness.
+\item Test simple defences against false reports (trimming, capping, spot checks).
 \item Add MSensing and deferred acceptance to RQ4.
 \item Run a punishment (impulse-response) test on the real-data Q-learners.
-\item Extend the literature review to at least fifteen papers.
+\item Extend the literature review.
 \end{enumerate}
 
 \begin{thebibliography}{99}
